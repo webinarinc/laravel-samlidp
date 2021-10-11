@@ -24,9 +24,12 @@ trait PerformsSingleSignOn
      */
     protected function init()
     {
+    	$certificate = ! empty(config('samlidp.cert_data')) ? config('samlidp.cert_data') : Storage::disk('samlidp')->get(config('samlidp.certname', 'cert.pem'));
+    	$keyCertificate = ! empty(config('samlidp.key_data')) ? config('samlidp.key_data') : Storage::disk('samlidp')->get(config('samlidp.keyname', 'key.pem'));
+
         $this->issuer = url(config('samlidp.issuer_uri'));
-        $this->certificate = (new X509Certificate)->loadPem(Storage::disk('samlidp')->get(config('samlidp.certname', 'cert.pem')));
-        $this->private_key = Storage::disk('samlidp')->get(config('samlidp.keyname', 'key.pem'));
+        $this->certificate = (new X509Certificate)->loadPem($certificate);
+        $this->private_key = $keyCertificate;
         $this->private_key = KeyHelper::createPrivateKey($this->private_key, '', false, XMLSecurityKey::RSA_SHA256);
         $this->digest_algorithm = config('samlidp.digest_algorithm', XMLSecurityDSig::SHA1);
     }
