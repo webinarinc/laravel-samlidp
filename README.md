@@ -7,6 +7,9 @@
 
 This package allows you to implement your own Identification Provider (idP) using the SAML 2.0 standard to be used with supporting SAML 2.0 Service Providers (SP).
 
+Starting in version ^5.1, Laravel 9 is supported.
+Starting in version ^5.2.4, Laravel 10 is supported.
+
 In this version we will be allowing for Laravel ^7.0 or ^8.0.
 
 If you are looking for Laravel ^5.6 see [v1.0](https://github.com/codegreencreative/laravel-samlidp/tree/1.0)
@@ -54,6 +57,8 @@ Options:
   --certname=<name>  Name of the certificate file [default: cert.pem]
 ```
 
+Optionally, you can set the certificate and key using two environment variables: `SAMLIDP_CERT` and `SAMLIDP_KEY`.
+
 ## Usage
 
 Within your login view, probably `resources/views/auth/login.blade.php` add the SAMLRequest directive beneath the CSRF directive:
@@ -93,10 +98,78 @@ return [
             'destination' => 'https://example.com/saml/acs',
             // Simple Logout URL of the Service Provider
             'logout' => 'https://example.com/saml/sls',
-        ]
+            // SP certificate
+            // 'certificate' => '',
+            // Turn off auto appending of the idp query param
+            // 'query_params' => false,
+            // Turn off the encryption of the assertion per SP
+            // 'encrypt_assertion' => false
+        ],
     ],
     // List of guards saml idp will catch Authenticated, Login and Logout events (thanks @abublihi)
-    'guards' => ['web']
+    'guards' => ['web'],
+];
+```
+
+### Setting the service provider certificate
+
+There are three options to set the service provider certificate.
+
+1. Provide the certificate as a string:
+
+```php
+<?php
+
+return [
+    // ...
+    'sp' => [
+        // Base64 encoded ACS URL
+        'aHR0cHM6Ly9teWZhY2Vib29rd29ya3BsYWNlLmZhY2Vib29rLmNvbS93b3JrL3NhbWwucGhw' => [
+            // ...
+            // SP certificate
+            // 'certificate' => "-----BEGIN CERTIFICATE-----\nb3BlbnNzaC1rZXktdjEA...LWdlbmVyYXRlZC1rZXkBAgM\n-----END CERTIFICATE-----"
+        ],
+    ],
+    // ...
+];
+```
+
+2. Load from a variable within the `.env` file.
+   You can choose an appropriate variable name that best matches your projects requirements.
+
+```php
+<?php
+
+return [
+    // ...
+    'sp' => [
+        // Base64 encoded ACS URL
+        'aHR0cHM6Ly9teWZhY2Vib29rd29ya3BsYWNlLmZhY2Vib29rLmNvbS93b3JrL3NhbWwucGhw' => [
+            // ...
+            // SP certificate
+            // 'certificate' => env('SAML_SP_CERTIFICATE', '')
+        ],
+    ],
+    // ...
+];
+```
+
+3. Load the certificate from a file:
+
+```php
+<?php
+
+return [
+    // ...
+    'sp' => [
+        // Base64 encoded ACS URL
+        'aHR0cHM6Ly9teWZhY2Vib29rd29ya3BsYWNlLmZhY2Vib29rLmNvbS93b3JrL3NhbWwucGhw' => [
+            // ...
+            // SP certificate
+            // 'certificate' => 'file://' . storage_path('samlidp/service-provider.pem')
+        ],
+    ],
+    // ...
 ];
 ```
 
@@ -131,7 +204,6 @@ return [
     'sp_slo_redirects' => [
         'mysp.com' => 'https://mysp.com',
     ],
-
 ];
 ```
 
@@ -185,7 +257,6 @@ class SamlAssertionAttributes
             ->addAttribute(new Attribute(ClaimTypes::NAME, auth()->user()->name));
     }
 }
-
 ```
 
 ## Digest Algorithm (optional)
@@ -200,3 +271,5 @@ return [
     'digest_algorithm' => \RobRichards\XMLSecLibs\XMLSecurityDSig::SHA1,
 ];
 ```
+
+[Buy me a coffee](https://www.buymeacoffee.com/upwebdesign) :coffee:

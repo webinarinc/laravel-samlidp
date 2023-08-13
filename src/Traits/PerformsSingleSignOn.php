@@ -24,13 +24,9 @@ trait PerformsSingleSignOn
      */
     protected function init()
     {
-    	$certificate = ! empty(config('samlidp.cert_data')) ? config('samlidp.cert_data') : Storage::disk('samlidp')->get(config('samlidp.certname', 'cert.pem'));
-    	$keyCertificate = ! empty(config('samlidp.key_data')) ? config('samlidp.key_data') : Storage::disk('samlidp')->get(config('samlidp.keyname', 'key.pem'));
-
         $this->issuer = url(config('samlidp.issuer_uri'));
-        $this->certificate = (new X509Certificate)->loadPem($certificate);
-        $this->private_key = $keyCertificate;
-        $this->private_key = KeyHelper::createPrivateKey($this->private_key, '', false, XMLSecurityKey::RSA_SHA256);
+        $this->certificate = $this->getCertificate();
+        $this->private_key = $this->getKey();
         $this->digest_algorithm = config('samlidp.digest_algorithm', XMLSecurityDSig::SHA1);
     }
 
@@ -65,5 +61,27 @@ trait PerformsSingleSignOn
     public function getServiceProvider($request)
     {
         return base64_encode($request->getAssertionConsumerServiceURL());
+    }
+
+    /**
+     * @return \LightSaml\Credential\X509Certificate
+     */
+    protected function getCertificate(): X509Certificate
+    {
+        $certificate = config('samlidp.cert') ?: Storage::disk('samlidp')->get(config('samlidp.certname', 'cert.pem'));
+
+        return (strpos($certificate, 'file://') === 0)
+            ? X509Certificate::fromFile($certificate)
+            : (new X509Certificate)->loadPem($certificate);
+    }
+
+    /**
+     * @return \RobRichards\XMLSecLibs\XMLSecurityKey
+     */
+    protected function getKey(): XMLSecurityKey
+    {
+        $key = config('samlidp.key') ?: Storage::disk('samlidp')->get(config('samlidp.keyname', 'key.pem'));
+
+        return KeyHelper::createPrivateKey($key, '', strpos($key, 'file://') === 0, XMLSecurityKey::RSA_SHA256);
     }
 }
